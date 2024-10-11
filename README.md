@@ -1,38 +1,9 @@
 
 ## Kubernetes 中部署的应用，高可用性应该采取哪些措施?
 
-- 打散 Pod 调度
-使用反亲和策略打散 Pod 调度到不同一个节点，避免单节点故障
+- 打散 Pod 调度：使用反亲和策略打散 Pod 调度到不同一个节点，避免单节点故障
 
-```
-spec:
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 1
-        podAffinityTerm:
-          labelSelector: 
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              -  my-app
-          topologyKey: "kubernetes.io/hostname"
-```
-- 节点组调度
-不同类型的应用对资源的需求往往不同，使用节点亲和策略将这些应用分配到不同的节点组，可以根据其特定需求配置节点资源，从而提高资源利用率和应用性能
-```
-   affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-        - matchExpressions:
-          - key: node-group
-            operator: In
-            values:                 
-            - business
-```
-优化滚动更新《滚动更新也翻车：为什么 Kubernetes 看似无缝的更新也会影响服务》中有一些具体的方案
+- 节点组调度：不同类型的应用对资源的需求往往不同，使用节点亲和策略将这些应用分配到不同的节点组，可以根据其特定需求配置节点资源，从而提高资源利用率和应用性能
 
 - 合理设置 Request 与 Limit：可以避免某些Pod消耗过多资源，导致节点过载或其他Pod资源不足，确保集群中的每个Pod都能获得公平的资源分配
 
