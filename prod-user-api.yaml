@@ -18,11 +18,16 @@ spec:
         app: prod-user-api 
     spec:
         
+      terminationGracePeriodSeconds: 60  
       restartPolicy: Always  
       containers:
         - name: user-api
           image: xxxxxxxxx/prod-user-api:1
           imagePullPolicy: Always
+          ports: 
+            - name: http
+              containerPort: 80
+              protocol: TCP 
 
           # 合理设置 Request 与 Limit：可以避免某些Pod消耗过多资源，导致节点过载或其他Pod资源不足，确保集群中的每个Pod都能获得公平的资源分配
           resources:
@@ -32,11 +37,13 @@ spec:
             limits:
               cpu: "64m"
               memory: "256M"
-          ports: 
-            - name: http
-              containerPort: 80
-              protocol: TCP 
-            
+
+          # 合理设置 terminationGracePeriodSeconds 和 preStop 钩子：通过配置 terminationGracePeriodSeconds 和 preStop 钩子，可以确保旧 Pod 在终止前有足够的时间完成清理工作，并确保新 Pod 准备就绪    
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 30"]
+
       affinity: 
         
         # 节点组调度 不同类型的应用对资源的需求往往不同，使用节点亲和策略将这些应用分配到不同的节点组，可以根据其特定需求配置节点资源，从而提高资源利用率和应用性能
@@ -65,7 +72,7 @@ spec:
 
           startupProbe:
             httpGet:
-              path: /api/user/health-check.html
+              path: /api/users/health-check.html
               port: 80
               scheme: HTTP
             initialDelaySeconds: 1
@@ -76,7 +83,7 @@ spec:
           
           livenessProbe:
             httpGet:
-              path: /api/user/health-check.html
+              path: /api/users/health-check.html
               port: 80
               scheme: HTTP
             initialDelaySeconds: 90
@@ -85,10 +92,10 @@ spec:
             successThreshold: 1
             failureThreshold: 3
            
-          
+          # Readiness  Probe 用于检测 Pod 是否已经准备好接收流量。通过配置 Readiness Probe，可以确保只有在 Pod 完全准备好后，才会接收流量，从而避免服务中断
           readinessProbe:
             httpGet:
-              path: /api/user/health-check.html
+              path: /api/users/health-check.html
               port: 80
               scheme: HTTP
             initialDelaySeconds: 90
@@ -97,3 +104,6 @@ spec:
             successThreshold: 1
             failureThreshold: 3
           
+        
+
+     
