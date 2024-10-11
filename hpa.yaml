@@ -1,0 +1,49 @@
+# 给你的应用创建 HPA 自定义资源
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: prod-user-api
+spec:
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+    type: Resource
+  - resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+    type: Resource    
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: prod-user-api
+    
+  behavior: 
+    scaleDown:
+  # 需要缩容时，先观察 5 分钟，如果一直持续需要缩容才执行缩容
+      stabilizationWindowSeconds: 300 
+      policies:
+      - type: Percent
+  # 允许 100% 删除当前运行的副本，这意味着扩缩目标可以缩小到允许的最小副本数
+        value: 100 
+        periodSeconds: 15
+    scaleUp:
+      # 需要扩容时，立即扩容
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        # 每 15s 最大允许扩容当前 1 倍数量的 Pod
+        periodSeconds: 15
+      - type: Pods
+        value: 4
+       # 每 15s最大允许扩容 4 个 Pod
+        periodSeconds: 15 
+      # 使用以上两种扩容策略中算出来扩容 Pod 数量最大的
+      selectPolicy: Max
